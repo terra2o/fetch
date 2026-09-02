@@ -27,7 +27,8 @@
 #define COLOR_WHITE   "\x1b[37m"
 #define COLOR_RESET   "\x1b[0m"
 
-int get_disk_str(const char *path, char *buf, size_t buf_len) {
+int get_disk_str(const char *path, char *buf, size_t buf_len)
+{
     struct statvfs vfs;
     if (statvfs(path, &vfs) != 0) return -1;
 
@@ -41,7 +42,8 @@ int get_disk_str(const char *path, char *buf, size_t buf_len) {
     return snprintf(buf, buf_len, "%.2fGB/%.2fGB", used_gb, total_gb);
 }
 
-int get_ram_str(char *buf, size_t buf_len) {
+int get_ram_str(char *buf, size_t buf_len)
+{
     FILE *fp = fopen("/proc/meminfo", "r");
     if (!fp) return -1;
 
@@ -69,7 +71,8 @@ int get_ram_str(char *buf, size_t buf_len) {
     return snprintf(buf, buf_len, "%.2fGB/%.2fGB", used_gb, total_gb);
 }
 
-char *get_distribution_name() {
+char *get_distribution_name()
+{
     static char distro[256] = {0};
     FILE *fp = fopen("/etc/os-release", "r");
     if (!fp) {
