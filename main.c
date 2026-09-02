@@ -14,6 +14,9 @@
 #include <stdio.h>
 #include <sys/utsname.h>
 #include <string.h>
+#include <sys/sysinfo.h>
+#include <stdlib.h>
+#include <sys/statvfs.h>
 
 #define COLOR_RED     "\x1b[31m"
 #define COLOR_GREEN   "\x1b[32m"
@@ -23,6 +26,48 @@
 #define COLOR_CYAN    "\x1b[36m"
 #define COLOR_WHITE   "\x1b[37m"
 #define COLOR_RESET   "\x1b[0m"
+
+int get_disk_str(const char *path, char *buf, size_t buf_len) {
+    struct statvfs vfs;
+    if (statvfs(path, &vfs) != 0) return -1;
+
+    unsigned long long total_bytes = (unsigned long long)vfs.f_blocks * vfs.f_frsize;
+    unsigned long long free_bytes = (unsigned long long)vfs.f_bfree * vfs.f_frsize;
+    unsigned long long used_bytes = total_bytes - free_bytes;
+
+    double total_gb = (double)total_bytes / (1024 * 1024 * 1024);
+    double used_gb = (double)used_bytes / (1024 * 1024 * 1024);
+
+    return snprintf(buf, buf_len, "%.2fGB/%.2fGB", used_gb, total_gb);
+}
+
+int get_ram_str(char *buf, size_t buf_len) {
+    FILE *fp = fopen("/proc/meminfo", "r");
+    if (!fp) return -1;
+
+    char line[128];
+    unsigned long long total_kb = 0, avail_kb = 0;
+    int found = 0;
+
+    while (fgets(line, sizeof(line), fp)) {
+        if (strncmp(line, "MemTotal:", 9) == 0) {
+            total_kb = strtoull(line + 9, NULL, 10);
+            found++;
+        } else if (strncmp(line, "MemAvailable:", 13) == 0) {
+            avail_kb = strtoull(line + 13, NULL, 10);
+            found++;
+        }
+        if (found == 2) break;
+    }
+    fclose(fp);
+
+    if (found < 2) return -1;
+
+    double total_gb = (double)total_kb / (1024 * 1024);
+    double used_gb = (double)(total_kb - avail_kb) / (1024 * 1024);
+
+    return snprintf(buf, buf_len, "%.2fGB/%.2fGB", used_gb, total_gb);
+}
 
 char *get_distribution_name() {
     static char distro[256] = {0};
@@ -63,21 +108,33 @@ char *get_distribution_name() {
 
     return distro;
 }
-void print_info(struct utsname *sysinfo) {
+
+void print_info(struct utsname *buffer)
+{
+    char ram_buffer[1024];
+    get_ram_str(ram_buffer, sizeof(ram_buffer));
+
+    char disk_buffer[1024];
+    get_disk_str("/", disk_buffer, sizeof(disk_buffer));
+
     char *labels[] = {
         "Kernel version: ",
         "Kernel name: ",
         "Distribution: ",
         "Machine type: ",
-        "Node name: "
+        "Node name: ",
+        "RAM: ",
+        "Disk: ",
     };
 
     char *values[] = {
-        sysinfo->release,
-        sysinfo->sysname,
+        buffer->release,
+        buffer->sysname,
         get_distribution_name(),
-        sysinfo->machine,
-        sysinfo->nodename
+        buffer->machine,
+        buffer->nodename,
+        ram_buffer,
+        disk_buffer,
     };
 
     int max_label_len = 0;
@@ -85,7 +142,7 @@ void print_info(struct utsname *sysinfo) {
     int top_border_size = 0;
 
     // don't forget to increment this number when you add a new thing
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 7; i++) {
         int label_len = strlen(labels[i]);
         int value_len = strlen(values[i]);
         if (label_len > max_label_len) max_label_len = label_len;
@@ -105,7 +162,8 @@ void print_info(struct utsname *sysinfo) {
     }
     printf("─\n%s", COLOR_RESET);
 
-    for (int i = 0; i < 5; i++) {
+    // don't forget to increment this number when you add a new thing
+    for (int i = 0; i < 7; i++) {
         int label_len = strlen(labels[i]);
         int value_len = strlen(values[i]);
 
@@ -134,10 +192,10 @@ void print_info(struct utsname *sysinfo) {
 
 int main()
 {
-    struct utsname sysinfo;
+    struct utsname buffer;
 
-    if (uname(&sysinfo) == 0) {
-        print_info(&sysinfo);
+    if (uname(&buffer) == 0) {
+        print_info(&buffer);
     } else {
         perror("uname");
         return 1;
