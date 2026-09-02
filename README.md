@@ -2,6 +2,10 @@
 
 fetch is a fetch program for Linux, made for learning purposes. In C.
 
+<p align="center">
+	<img src="assets/screenshot_of_fetch.jpg" width="822">
+</p>
+
 ## Building
 ```bash
 gcc -O3 fetch.c -o fetch
