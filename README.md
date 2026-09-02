@@ -8,4 +8,5 @@ gcc main.c -o main
 ```
 
 ## TODO
-- [ ] Distribution name
+#### Note that I don't plan on adding ASCII art since that would be a lot of work.
+- [x] Distribution name
