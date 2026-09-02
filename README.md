@@ -8,4 +8,4 @@ gcc main.c -o main
 ```
 
 ## TODO
-[ ] Distribution name
+- [ ] Distribution name
