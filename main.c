@@ -3,7 +3,7 @@
  * fetch tool for Linux systems
  * made for learning purposes.
  *
- * by terra2o, under GPLv3
+ * by terra2o (M. Taha Kircali), under GPLv3
  *
  */
 
